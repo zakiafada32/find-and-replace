@@ -1,3 +1,4 @@
+use regex::Regex;
 use std::{env, fs};
 use text_colorizer::*;
 
@@ -31,7 +32,15 @@ fn read_and_write(args: &Arguments) {
         }
     };
 
-    match fs::write(&args.output_file, &data) {
+    let replace_data = match replace(&args.pattern, &args.replace, &data) {
+        Ok(d) => d,
+        Err(e) => {
+            eprintln!("{} failed to replace text: {:?}", "Error".red().bold(), e);
+            std::process::exit(1)
+        }
+    };
+
+    match fs::write(&args.output_file, &replace_data) {
         Ok(_) => (),
         Err(e) => {
             eprintln!(
@@ -42,6 +51,11 @@ fn read_and_write(args: &Arguments) {
             )
         }
     }
+}
+
+fn replace(target: &str, rep: &str, data: &str) -> Result<String, regex::Error> {
+    let regex = Regex::new(target)?;
+    Ok(regex.replace_all(data, rep).to_string())
 }
 
 fn parse_args() -> Arguments {
